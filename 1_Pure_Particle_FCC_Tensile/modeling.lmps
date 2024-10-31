@@ -1,0 +1,31 @@
+units 			si
+atom_style 		atomic
+dimension 		3
+boundary 		p p p  
+
+neighbor 		0.0005 bin
+neigh_modify 	every 1 delay 0 check yes
+thermo_modify 	lost ignore flush yes  
+
+
+variable 		a equal 0.0002                          # Lattice constant
+variable 		r0 equal ${a}/2*sqrt(2)                 # HALF of equilibrium distance
+variable 		sigma equal ${r0}*(2^(-1/6))            # Lennard-Jones sigma
+variable 		rc equal 1.5*${sigma}                   # Lennard-Jones cutoff
+variable 		dt equal 1e-9                           # Time step (quasi-static)
+timestep 		${dt}
+
+lattice 		fcc $a                                   # FCC lattice
+
+variable		radius equal 0.0006
+variable		high equal 0.001
+
+region 			simbox block -${radius} ${radius} -${radius} ${radius} -${high} ${high} units box
+create_box 		1 simbox
+
+region 			box cylinder z 0 0 ${radius} -${high} ${high} units box
+create_atoms 	1 region box
+
+mass 			1 0.001  
+
+write_data 		./data/cylinder.data nocoeff 
