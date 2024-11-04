@@ -1,2 +1,3 @@
 log.lammps
 *.dump
+__pycache__/
