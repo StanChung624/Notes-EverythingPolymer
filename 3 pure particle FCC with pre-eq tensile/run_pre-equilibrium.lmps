@@ -1,0 +1,47 @@
+units si
+atom_style atomic
+dimension 3
+boundary p p f
+
+neighbor 0.0005 bin
+neigh_modify every 1 delay 0 check yes
+thermo_modify  lost ignore flush yes
+
+variable a equal 0.0002
+variable r0 equal ${a}/2*sqrt(2)
+variable sigma equal ${r0}*(2^(-1/6))
+variable rc equal 1.5*${sigma}
+variable dt equal 1e-9
+timestep ${dt}
+
+lattice fcc ${a}
+
+read_data ./data/box.data
+
+pair_style lj/cut ${rc}
+variable epsilon equal 1.7e-3 
+pair_coeff 1 1 ${epsilon} ${sigma}
+
+variable init_temperature equal 273.15+25
+# Define the initial temperature for the system
+# set to 300 K, which will be used for velocity initialization
+
+# create initial temperature with
+# random seed: 4928459 for reproducibility
+# rot yes: allowing correction of angular momentum
+# dist gaussian: ensures velocities follow a Gaussian distribution 
+velocity all create ${init_temperature} 4928459 rot yes dist gaussian
+
+# Output thermodynamic information every 1000 steps
+thermo 1000
+
+# Apply NVT ensemble to maintain a constant temperature
+# Sets initial and final temperatures to 300 K, with a damping parameter of 1e-7
+# The damping parameter controls the rate of temperature adjustment
+fix eq all nvt temp ${init_temperature} ${init_temperature} 1e-7
+
+dump 1 all custom 100 ./data/equlibrium_process.dump id type x y z
+
+run 200
+
+write_data ./data/pre-equlibrium.data nocoeff

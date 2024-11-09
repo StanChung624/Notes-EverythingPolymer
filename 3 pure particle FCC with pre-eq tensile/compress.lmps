@@ -1,0 +1,61 @@
+log ./data/compress.log
+units si
+atom_style atomic
+dimension 3
+boundary p p f
+neighbor 0.0005 bin
+neigh_modify every 1 delay 0 check yes
+thermo_modify lost ignore flush yes
+
+variable a equal 0.0002
+variable r0 equal ${a}/2*sqrt(2)
+variable sigma equal ${r0}*(2^(-1/6))
+variable rc equal 1.5*${sigma} 
+variable dt equal 1e-10
+timestep ${dt}
+lattice fcc ${a}
+
+# read the pre-equilibrium data
+read_data ./data/pre-equlibrium.data
+
+# setup the mass of particle, 1.672e-7 is the density of steel
+mass 1 1.672e-7 #steel
+
+pair_style lj/cut ${rc}
+variable epsilon equal 1.7e-3 
+pair_coeff 1 1 ${epsilon} ${sigma}
+
+thermo 100
+
+fix eq all nve
+
+## setting the upper wall and lower wall
+variable top_lim equal  2.51e-3
+variable bot_lim equal -2.51e-3
+
+# compute all atom stress 
+compute STRESS all stress/atom NULL
+
+# The walls are repulsive only due to the cutoff distance == equilibrium distancev
+variable expand_sigma equal ${sigma}*2.5
+fix wallbot all wall/lj126 zlo v_botind ${epsilon} ${sigma} ${expand_sigma} units box
+fix walltop all wall/lj126 zhi v_topind ${epsilon} ${sigma} ${expand_sigma} units box
+
+# output the reaction force of both walls
+fix react_f all ave/time 100 1 100 f_wallbot[*] f_walltop[*] file ./data/compress_machine.data 
+fix_modify wallbot energy yes
+fix_modify walltop energy yes
+
+# the height of specimen is 0.01, here we compressed it by 20%, which is 0.002
+# so the upper wall will move down for 0.001, and so as the lower wall
+variable botind equal ${bot_lim}+(0.005e-4*ramp(0,1))
+variable topind equal ${top_lim}-(0.005e-4*ramp(0,1))
+
+# output the animation (which could also be used to analyze the result)
+dump loc all custom 1000 ./data/compress_process.dump id type x y z c_STRESS[*] 
+
+write_data ./data/compressed.data nocoeff
+
+# number of total step = 40000, means the specimen is compressed by velocity = 100m/s
+# 0.001/(40000*1e-9) = 50
+run 60000

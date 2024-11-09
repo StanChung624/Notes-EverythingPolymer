@@ -51,6 +51,8 @@ fix             ss all print 100 "${ts} ${strain} ${stress33}" append ./data/ss.
 
 dump            loc all custom 5000 loc.dump id type x y z c_stressatom[*]
 
+log ./data/deform.log
+
 run             ${dyna_step}
 
 write_data      ./data/final_model.data nocoeff 

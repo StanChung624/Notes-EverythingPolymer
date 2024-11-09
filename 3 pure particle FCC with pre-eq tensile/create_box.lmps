@@ -1,0 +1,27 @@
+units si
+atom_style atomic
+dimension 3
+boundary p p p
+
+neighbor 0.0005 bin
+neigh_modify every 1 delay 0 check yes
+thermo_modify  lost ignore flush yes
+
+variable a equal 0.0002
+variable r0 equal ${a}/2*sqrt(2)
+variable sigma equal ${r0}*(2^(-1/6))
+variable rc equal 1.5*${sigma}
+variable dt equal 1e-9
+timestep ${dt}
+
+lattice fcc ${a}
+
+region simbox block -0.01 0.01 -0.01 0.01 -0.01 0.01 units box
+create_box 1 simbox
+
+region box block -0.0025 0.0025 -0.0025 0.0025 -0.0025 0.0025 units box
+create_atoms 1 region box
+
+mass 1 1.672e-7 #steel
+
+write_data ./data/box.data nocoeff
